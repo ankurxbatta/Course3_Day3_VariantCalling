@@ -59,4 +59,74 @@ conda create -n variant_env -c bioconda -c conda-forge \
 conda activate variant_env
 ```
 
+```{bash}
+# 1. Map reads to Reference
+minimap2 -ax map-ont data/chr1.fasta no_upload_data/ERR1539006.fastq | \
+  samtools sort -o data/aligned_chr1.bam
+
+# 2. Index the BAM (creates .bam.bai)
+samtools index data/aligned_chr1.bam
+```
+```{bash}
+# Ensure medaka_env is active
+medaka_variant -i no_upload_data/ERR1539006.fastq -r data/chr1.fasta -t 8
+```
+
+```{bash}
+#1 Create the gene only GFF
+awk 'BEGIN{FS=OFS="\t"} $0 ~ /^#/ || $3=="gene"' \
+data/S288C_reference.gff > data/S288C_genes.gff
+
+#2 Check for overlaps between Variants (A) and Genes (B)
+# Ensure variant_env is active
+# We use -a (the variant file) and -b (the gene feature file)
+bedtools intersect \
+  -a data/variance_against_chr1_medaka.vcf \
+  -b data/S288C_genes.gff \
+  -header > data/variants_in_genes.vcf
+```
+
+```{r}
+vcf <- readVcf("data/variants_in_genes.vcf")
+gr_variants <- rowRanges(vcf)
+gr_variants <- gr_variants[fixed(vcf)$FILTER == "PASS"]
+gr_variants <- gr_variants[seqnames(gr_variants) == "NC_001133.9"]
+```
+
+```{r}
+# Build the Gene Blueprint from the GFF
+txdb_ref <- makeTxDbFromGFF("data/S288C_reference.gff", format = "gff3")
+
+gr_genes <- genes(txdb_ref)
+gr_genes <- gr_genes[seqnames(gr_genes) == "NC_001133.9"]
+
+gene_names <- mcols(gr_genes)$gene_id
+
+names(gr_genes) <- gene_names
+mcols(gr_genes)$gene <- names(gr_genes)   
+
+options(ucscChromosomeNames=FALSE)
+
+gene_track <- GeneRegionTrack(
+  gr_genes,
+  chromosome = "NC_001133.9",
+  name = "Gene Model",
+  transcriptAnnotation = "gene",
+  showID = TRUE
+)
+
+# Build the Delta Track (Your Variants)
+variant_track <- AnnotationTrack(gr_variants,
+                                chromosome = "NC_001133.9",
+                                name = "Variants",
+                                shape = "box",
+                                fill  = "red"
+)
+
+# Build the Evidence Track (Your Reads)
+aln_track <- AlignmentsTrack("data/aligned_chr1.bam",
+                             chromosome = "NC_001133.9",
+                             isPaired = FALSE, 
+                             name = "Read Coverage")
+```
 
