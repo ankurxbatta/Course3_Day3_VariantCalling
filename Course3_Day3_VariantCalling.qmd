@@ -37,6 +37,7 @@ download.file(url = gff_url, destfile = dest_compressed, method = "wget")
 ```{r}
 # Run this in your RStudio Terminal
 system("gunzip -c data/S288C_reference.gff.gz > data/S288C_reference.gff")
+system("gunzip -c no_upload_data/ERR1539006.fastq.gz > no_upload_data/ERR1539006.fastq")
 ```
 
 ```{bash}
