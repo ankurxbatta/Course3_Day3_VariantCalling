@@ -130,3 +130,12 @@ aln_track <- AlignmentsTrack("data/aligned_chr1.bam",
                              name = "Read Coverage")
 ```
 
+
+```{r}
+
+plotTracks(list(GenomeAxisTrack(), gene_track, variant_track, aln_track),
+           from = 31500, to = 32000, 
+           chromosome = "NC_001133.9",
+           main = "Variant Verification: Chr 1 Window")
+```
+
