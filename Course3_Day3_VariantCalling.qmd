@@ -1,0 +1,60 @@
+---
+title: "Course3_Day3_VariantCalling"
+format: html
+---
+
+```{r}
+pkg_list <- c("VariantAnnotation", "GenomicFeatures", "GenomicRanges", "Gviz")
+
+invisible(lapply(pkg_list, function(pkg) {
+  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+    message(paste("Installing", pkg, "..."))
+  
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
+    
+    BiocManager::install(pkg, update = FALSE, ask = FALSE)
+    library(pkg, character.only = TRUE)
+    
+  } else {
+    message(paste(pkg, "is already installed and loaded."))
+  }
+}))
+```
+```{r}
+# Create data directory if it doesn't exist
+dir.create("data", showWarnings = FALSE)
+
+# NCBI URL for the S. cerevisiae S288C Reference GFF
+gff_url <- "https://ftp.ncbi.nlm.nih.gov/genomes/refseq/fungi/Saccharomyces_cerevisiae/latest_assembly_versions/GCF_000146045.2_R64/GCF_000146045.2_R64_genomic.gff.gz"
+dest_compressed <- "data/S288C_reference.gff.gz"
+
+# Download the file using wget
+message("Downloading reference GFF...")
+download.file(url = gff_url, destfile = dest_compressed, method = "wget")
+```
+```{r}
+# Run this in your RStudio Terminal
+system("gunzip -c data/S288C_reference.gff.gz > data/S288C_reference.gff")
+```
+
+```{bash}
+conda activate medaka_env
+medaka -h
+```
+
+```{bash}
+# Create a dedicated environment with all necessary tools
+# CrossMap is included for tomorrow's coordinate liftover
+conda create -n variant_env -c bioconda -c conda-forge \
+  minimap2 \
+  samtools \
+  bedtools \
+  bcftools \
+  crossmap \
+  htslib
+
+conda activate variant_env
+```
+
